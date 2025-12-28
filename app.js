@@ -1,293 +1,97 @@
-// ===== Constants =====
-const GENRES = [
-    'Acción', 'Aventura', 'Fantasía', 'Romance', 'Drama', 'Comedia',
-    'Horror', 'Misterio', 'Isekai', 'Reencarnación', 'Regresión',
-    'Artes Marciales', 'Sobrenatural', 'Psicológico', 'Sci-Fi',
-    'Shounen', 'Shoujo', 'Seinen', 'Josei', 'Slice of Life',
-    'Boys Love', 'Girls Love', 'Harem', 'Militar', 'Cultivación',
-    'Wuxia', 'Xianxia', 'Murim', 'Sistema', 'Venganza',
-    'Supervivencia', 'Apocalíptico', 'Zombies', 'Vampiros', 'Demonios',
-    'Magia', 'Escolar', 'Deportes', 'Música', 'Cocina',
-    'Médico', 'Histórico', 'Realeza', 'Villana', 'Transmigración',
-    'Dungeons', 'Cazadores', 'Torres', 'Jugadores', 'Necromante',
-    'Overpowered', 'Underdog', 'Anti-héroe', 'Tragedia', 'Maduro',
-    'Gore', 'Thriller', 'Crimen', 'Mecha', 'Virtual Reality',
-    'Time Loop', 'Segunda Oportunidad', 'Familia', 'Amistad', 'Traición'
-];
+const inTitle = document.getElementById('in-title'),
+      inGenres = document.getElementById('in-genres'), // Captura géneros
+      inSynop = document.getElementById('in-synop'),
+      inTags = document.getElementById('in-tags'),
+      inStatus = document.getElementById('in-status'),
+      inFile = document.getElementById('in-file'),
+      colTitle = document.getElementById('col-title'),
+      colGenre = document.getElementById('col-genre');
 
-const STATUS_MAP = {
-    'none': '',
-    'ongoing': 'En Emisión',
-    'completed': 'Completado',
-    'paused': 'En Pausa',
-    'cancelled': 'Cancelado'
+const dTitle = document.getElementById('display-title'),
+      dGenres = document.getElementById('genres-row'), // Muestra géneros
+      dSynop = document.getElementById('display-synop'),
+      dTags = document.getElementById('tags-container'),
+      dStatus = document.getElementById('display-status'),
+      dBg = document.getElementById('card-bg');
+
+// Lógica de Géneros
+inGenres.oninput = () => {
+    const list = inGenres.value.split(',');
+    dGenres.innerHTML = '';
+    list.forEach(g => {
+        if(g.trim()) {
+            const span = document.createElement('span');
+            span.className = 'genre-item';
+            span.innerText = g.trim();
+            span.style.backgroundColor = colGenre.value; // Color personalizado
+            dGenres.appendChild(span);
+        }
+    });
 };
 
-const THEME_COLORS = {
-    classic: { title: '#ffffff', desc: '#9ca3af', accent: '#3b82f6' },
-    dark: { title: '#ffffff', desc: '#9ca3af', accent: '#22c55e' },
-    neon: { title: '#00ff88', desc: '#00ffff', accent: '#ff00ff' },
-    vintage: { title: '#ffffff', desc: '#9ca3af', accent: '#8b4513' }
+// Actualizar colores de géneros ya existentes cuando cambias el selector
+colGenre.oninput = () => {
+    document.querySelectorAll('.genre-item').forEach(item => {
+        item.style.backgroundColor = colGenre.value;
+    });
 };
 
-// ===== State =====
-const state = {
-    title: '',
-    synopsis: '',
-    hashtags: '',
-    status: 'none',
-    theme: 'dark',
-    titleSize: 28,
-    titleColor: '#ffffff',
-    descColor: '#9ca3af',
-    selectedGenres: [],
-    coverImage: null
+// El resto de la lógica se mantiene igual
+inTitle.oninput = () => dTitle.innerText = inTitle.value || "Título del Manhwa";
+inSynop.oninput = () => dSynop.innerText = inSynop.value || "Sinopsis...";
+
+const tagColors = ['#ff4757', '#3742fa', '#2ed573', '#ffa502', '#e84393', '#6366f1'];
+inTags.oninput = () => {
+    const tags = inTags.value.split(' ');
+    dTags.innerHTML = '';
+    tags.forEach((t, i) => {
+        if(t.startsWith('#') && t.length > 1) {
+            const span = document.createElement('span');
+            span.className = 'tag-pill';
+            span.innerText = t;
+            span.style.backgroundColor = tagColors[i % tagColors.length];
+            dTags.appendChild(span);
+        }
+    });
 };
 
-// ===== DOM Elements =====
-const elements = {
-    titleInput: document.getElementById('title'),
-    synopsisInput: document.getElementById('synopsis'),
-    hashtagsInput: document.getElementById('hashtags'),
-    statusSelect: document.getElementById('status'),
-    themeRadios: document.querySelectorAll('input[name="theme"]'),
-    titleSizeSlider: document.getElementById('title-size'),
-    titleSizeValue: document.getElementById('title-size-value'),
-    titleColorPicker: document.getElementById('title-color'),
-    descColorPicker: document.getElementById('desc-color'),
-    genresContainer: document.getElementById('genres-container'),
-    coverImageInput: document.getElementById('cover-image'),
-    fileNameDisplay: document.getElementById('file-name'),
-    downloadBtn: document.getElementById('download-btn'),
-    charCounter: document.getElementById('char-counter'),
-    card: document.getElementById('card'),
-    cardTitle: document.getElementById('card-title'),
-    cardSynopsis: document.getElementById('card-synopsis'),
-    cardHashtags: document.getElementById('card-hashtags'),
-    cardStatus: document.getElementById('card-status'),
-    cardImage: document.getElementById('card-image'),
-    cardGenresOverlay: document.getElementById('card-genres-overlay')
-};
-
-// ===== Input Handlers =====
-function handleTitleChange(e) {
-    state.title = e.target.value;
-    updateCardTitle();
-}
-
-function handleSynopsisChange(e) {
-    const text = e.target.value;
-    state.synopsis = text.substring(0, 300);
-    e.target.value = state.synopsis;
-    updateCharCounter();
-    updateCardSynopsis();
-}
-
-function handleHashtagsChange(e) {
-    state.hashtags = e.target.value;
-    updateCardHashtags();
-}
-
-function handleStatusChange(e) {
-    state.status = e.target.value;
-    updateCardStatus();
-}
-
-function handleThemeChange(e) {
-    state.theme = e.target.value;
-    updateCardTheme();
-}
-
-function handleTitleSizeChange(e) {
-    state.titleSize = parseInt(e.target.value);
-    elements.titleSizeValue.textContent = state.titleSize;
-    updateCardTitleStyle();
-}
-
-function handleTitleColorChange(e) {
-    state.titleColor = e.target.value;
-    updateCardTitleStyle();
-}
-
-function handleDescColorChange(e) {
-    state.descColor = e.target.value;
-    updateCardDescStyle();
-}
-
-function handleGenreClick(genre) {
-    const index = state.selectedGenres.indexOf(genre);
-    if (index === -1) {
-        state.selectedGenres.push(genre);
+inStatus.onchange = () => {
+    const opt = inStatus.options[inStatus.selectedIndex];
+    if(inStatus.value) {
+        dStatus.style.display = 'block';
+        dStatus.innerText = inStatus.value;
+        dStatus.style.backgroundColor = opt.dataset.color;
     } else {
-        state.selectedGenres.splice(index, 1);
+        dStatus.style.display = 'none';
     }
-    updateGenreButtons();
-    updateCardGenres();
-}
+};
 
-function handleImageUpload(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const validTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!validTypes.includes(file.type)) {
-        alert('Por favor selecciona una imagen válida (JPG, PNG o WEBP)');
-        return;
-    }
-    
-    const reader = new FileReader();
-    reader.onload = function(event) {
-        state.coverImage = event.target.result;
-        elements.fileNameDisplay.textContent = file.name;
-        updateCardImage();
-    };
-    reader.readAsDataURL(file);
-}
+colTitle.oninput = () => dTitle.style.color = colTitle.value;
 
-async function handleDownload() {
-    try {
-        elements.downloadBtn.textContent = '⏳ Generando...';
-        elements.downloadBtn.disabled = true;
-        
-        const canvas = await html2canvas(elements.card, {
-            scale: 2,
-            useCORS: true,
-            backgroundColor: null,
-            logging: false
-        });
-        
+const applyFilters = () => { dBg.style.filter = `brightness(${document.getElementById('range-bright').value}%) contrast(${document.getElementById('range-contrast').value}%)`; };
+document.getElementById('range-bright').oninput = applyFilters;
+document.getElementById('range-contrast').oninput = applyFilters;
+
+inFile.onchange = function() {
+    const r = new FileReader();
+    r.onload = e => dBg.style.backgroundImage = `url(${e.target.result})`;
+    r.readAsDataURL(this.files[0]);
+};
+
+document.getElementById('download-btn').onclick = () => {
+    const captureArea = document.getElementById('capture-area');
+    const originalTransform = captureArea.style.transform;
+    captureArea.style.transform = 'none';
+
+    html2canvas(captureArea, {
+        scale: 4, 
+        useCORS: true,
+        backgroundColor: null
+    }).then(canvas => {
         const link = document.createElement('a');
-        const fileName = state.title ? state.title.replace(/[^a-z0-9]/gi, '-').toLowerCase() : 'manhwa-card';
-        link.download = `${fileName}-${Date.now()}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.download = `card-${inTitle.value || 'manhwa'}.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
         link.click();
-        
-    } catch (error) {
-        console.error('Error al generar la imagen:', error);
-        alert('Error al generar la imagen. Por favor intenta de nuevo.');
-    } finally {
-        elements.downloadBtn.textContent = '⬇️ Descargar Card';
-        elements.downloadBtn.disabled = false;
-    }
-}
-
-
-// ===== Card Update Functions =====
-function updateCharCounter() {
-    const count = state.synopsis.length;
-    elements.charCounter.textContent = `${count}/300`;
-    elements.charCounter.style.color = count >= 280 ? '#ef4444' : '';
-}
-
-function updateCardTitle() {
-    elements.cardTitle.textContent = state.title || 'Título del Manhwa';
-}
-
-function updateCardSynopsis() {
-    elements.cardSynopsis.textContent = state.synopsis || 'La sinopsis aparecerá aquí...';
-}
-
-function updateCardHashtags() {
-    const hashtags = state.hashtags.trim();
-    if (hashtags) {
-        const formatted = hashtags.split(/\s+/)
-            .map(tag => tag.startsWith('#') ? tag : `#${tag}`)
-            .join(' ');
-        elements.cardHashtags.textContent = formatted;
-    } else {
-        elements.cardHashtags.textContent = '';
-    }
-}
-
-function updateCardStatus() {
-    const statusText = STATUS_MAP[state.status];
-    if (statusText) {
-        elements.cardStatus.textContent = statusText;
-        elements.cardStatus.classList.remove('hidden', 'status-ongoing', 'status-completed', 'status-paused', 'status-cancelled');
-        elements.cardStatus.classList.add(`status-${state.status}`);
-    } else {
-        elements.cardStatus.classList.add('hidden');
-    }
-}
-
-function updateCardTheme() {
-    elements.card.className = `card theme-${state.theme}`;
-    
-    const colors = THEME_COLORS[state.theme];
-    elements.titleColorPicker.value = colors.title;
-    elements.descColorPicker.value = colors.desc;
-    state.titleColor = colors.title;
-    state.descColor = colors.desc;
-    
-    updateCardTitleStyle();
-    updateCardDescStyle();
-}
-
-function updateCardTitleStyle() {
-    elements.cardTitle.style.fontSize = `${state.titleSize}px`;
-    elements.cardTitle.style.color = state.titleColor;
-}
-
-function updateCardDescStyle() {
-    elements.cardSynopsis.style.color = state.descColor;
-}
-
-function updateCardImage() {
-    if (state.coverImage) {
-        elements.cardImage.innerHTML = `<img src="${state.coverImage}" alt="Cover">`;
-    } else {
-        elements.cardImage.innerHTML = '<span class="placeholder-text">🖼️</span>';
-    }
-}
-
-function updateCardGenres() {
-    elements.cardGenresOverlay.innerHTML = state.selectedGenres
-        .map(genre => `<span class="card-genre-tag">${genre}</span>`)
-        .join('');
-}
-
-function updateGenreButtons() {
-    const buttons = elements.genresContainer.querySelectorAll('.genre-btn');
-    buttons.forEach(btn => {
-        const genre = btn.dataset.genre;
-        btn.classList.toggle('active', state.selectedGenres.includes(genre));
+        captureArea.style.transform = originalTransform;
     });
-}
-
-// ===== Initialization =====
-function initGenres() {
-    elements.genresContainer.innerHTML = GENRES
-        .map(genre => `<button type="button" class="genre-btn" data-genre="${genre}">${genre}</button>`)
-        .join('');
-    
-    elements.genresContainer.querySelectorAll('.genre-btn').forEach(btn => {
-        btn.addEventListener('click', () => handleGenreClick(btn.dataset.genre));
-    });
-}
-
-function initEventListeners() {
-    elements.titleInput.addEventListener('input', handleTitleChange);
-    elements.synopsisInput.addEventListener('input', handleSynopsisChange);
-    elements.hashtagsInput.addEventListener('input', handleHashtagsChange);
-    elements.statusSelect.addEventListener('change', handleStatusChange);
-    
-    elements.themeRadios.forEach(radio => {
-        radio.addEventListener('change', handleThemeChange);
-    });
-    
-    elements.titleSizeSlider.addEventListener('input', handleTitleSizeChange);
-    elements.titleColorPicker.addEventListener('input', handleTitleColorChange);
-    elements.descColorPicker.addEventListener('input', handleDescColorChange);
-    
-    elements.coverImageInput.addEventListener('change', handleImageUpload);
-    elements.downloadBtn.addEventListener('click', handleDownload);
-}
-
-function init() {
-    initGenres();
-    initEventListeners();
-    updateCharCounter();
-    updateCardTitleStyle();
-}
-
-document.addEventListener('DOMContentLoaded', init);
+};
